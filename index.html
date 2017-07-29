@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Elm Scroll Resize Events</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: sans-serif;
+            color: #444;
+            margin: 0;
+        }
+    </style>
+    <script src="elm.js"></script>
+    <script src="smoothscroll.js"></script>
+</head>
+
+<body>
+    <script>
+        var _window = window;
+        _window.凸 = _window.凸 || {};
+        _window.凸.elmTesting = (function(_window) {
+            var _document = _window.document;
+            var _body = _document.body;
+            var _html = _document.documentElement;
+            var app;
+            var elmScrollTop = function(position) {
+                _window.scroll({
+                    top: position,
+                    left: 0,
+                    behavior: 'smooth'
+                });
+            };
+
+            var processScrollOrResize = function() {
+                var screenData = {
+                    scrollTop: parseInt(_window.pageYOffset || _html.scrollTop || _body.scrollTop || 0),
+                    pageHeight: parseInt(Math.max(_body.scrollHeight, _body.offsetHeight, _html.clientHeight, _html.scrollHeight, _html.offsetHeight)),
+                    viewportHeight: parseInt(_html.clientHeight),
+                    viewportWidth: parseInt(_html.clientWidth),
+                };
+                app.ports.scrollOrResize.send(screenData);
+            }
+
+            var scrollTimer = null;
+            var lastScrollFireTime = 0;
+            var minScrollTime = 200;
+            var scrolledOrResized = function() {
+                if (scrollTimer) {} else {
+                    var now = new Date().getTime();
+                    if (now - lastScrollFireTime > (3 * minScrollTime)) {
+                        processScrollOrResize();
+                        lastScrollFireTime = now;
+                    }
+                    scrollTimer = setTimeout(function() {
+                        scrollTimer = null;
+                        lastScrollFireTime = new Date().getTime();
+                        processScrollOrResize();
+                    }, minScrollTime);
+                }
+            };
+
+            var main = function() {
+                app = Elm.Main.fullscreen();
+                app.ports.scrollTop.subscribe(elmScrollTop);
+                _window.addEventListener('scroll', scrolledOrResized);
+                _window.addEventListener('resize', scrolledOrResized);
+            };
+
+            return {
+                main: main,
+            };
+        })(_window);
+        _window.凸.elmTesting.main();
+    </script>
+</body>
+
+</html>
